@@ -4,7 +4,7 @@ from pyspark.sql.functions import regexp_replace, col
 
 class DataFrameService:
     _instance = None
-    default_path="C:/Users/PC/Documents/repos/fastapilearn/data/tasa_mortalidad_asignaturas.csv"
+    default_path="data/tasa_mortalidad_asignaturas.csv"
 
     def __new__(cls):
         if cls._instance is None:
