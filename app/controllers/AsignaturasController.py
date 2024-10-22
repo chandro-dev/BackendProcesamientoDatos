@@ -1,6 +1,6 @@
 
 from fastapi import APIRouter, HTTPException
-from pyspark.sql.functions import col, expr,regexp_replace
+from pyspark.sql.functions import col, expr,regexp_replace,collect_list
 from app.services.DataFrameService import DataFrameService
 
 servicesDataFrame = DataFrameService()
@@ -36,16 +36,23 @@ async def get_asignatura(nombre_asignatura: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/periodos/")
-async def get_asignaturas():
+async def informacion_por_asignatura():
     try:
-        # Excluir las columnas "AREAS" y "CICLOS"
-        df_filtered = df.drop("AREAS", "CICLOS")
-        asignaturas = df_filtered.collect()
-        # Convertir los resultados a una lista de diccionarios
+        # Obtener el DataFrame desde el servicio
+        df = servicesDataFrame.get_dataframe()
+
+        # Agrupar por "ASIGNATURA" y recolectar todos los valores de las demás columnas
+        columnas = df.columns
+
+        # Colectar las columnas restantes para cada asignatura
+        exprs = [collect_list(col(c)).alias(c) for c in columnas]
+        df_grouped = df.groupBy("ASIGNATURA").agg(*exprs)
+
+        # Recoger los resultados en una lista de diccionarios
+        asignaturas = df_grouped.collect()
         asignaturas_list = [row.asDict() for row in asignaturas]
 
-        return {"Asignaturas": asignaturas_list}
-
-        return {"Asignaturas": asignaturas_list}
+        return {"informacion_por_asignatura": asignaturas_list}
+    
     except ValueError as e:
         raise HTTPException(status_code=500, detail=str(e))

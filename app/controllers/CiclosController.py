@@ -1,6 +1,6 @@
 
 from fastapi import APIRouter, HTTPException
-from pyspark.sql.functions import col, expr,regexp_replace
+from pyspark.sql.functions import col, collect_list
 from app.services.DataFrameService import DataFrameService
 
 servicesDataFrame = DataFrameService()
@@ -35,16 +35,23 @@ async def get_ciclo(nombre_ciclo: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/periodos/")
-async def get_asignaturas():
+async def datos_por_ciclos():
     try:
-        # Excluir las columnas "AREAS" y "CICLOS"
-        df_filtered = df.drop("AREAS", "CICLOS")
-        asignaturas = df_filtered.collect()
-        # Convertir los resultados a una lista de diccionarios
-        asignaturas_list = [row.asDict() for row in asignaturas]
+        # Obtener el DataFrame desde el servicio
+        df = servicesDataFrame.get_dataframe()
 
-        return {"Asignaturas": asignaturas_list}
+        # Definir las columnas que deseas incluir en el agrupamiento
+        columnas = df.columns
 
-        return {"Asignaturas": asignaturas_list}
+        # Agrupar por "CICLOS" y recolectar todos los valores de cada columna
+        exprs = [collect_list(col(c)).alias(c) for c in columnas]
+        df_grouped = df.groupBy("CICLOS").agg(*exprs)
+
+        # Recoger los resultados en una lista de diccionarios
+        ciclos = df_grouped.collect()
+        ciclos_list = [row.asDict() for row in ciclos]
+
+        return {"ciclos": ciclos_list}
+    
     except ValueError as e:
         raise HTTPException(status_code=500, detail=str(e))
