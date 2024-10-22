@@ -1,7 +1,6 @@
 from pyspark.sql.types import StructType, StructField, StringType
 # Definir el esquema esperado para el CSV
 
-
 schema =  StructType([
     StructField("ASIGNATURA", StringType(), True),
     StructField("2017 1", StringType(), True),
